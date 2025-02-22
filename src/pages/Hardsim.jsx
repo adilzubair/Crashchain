@@ -3,46 +3,39 @@ import React, { useState } from 'react';
 const HardwareSimulator = () => {
   const [vehicleDetails, setVehicleDetails] = useState({
     vinNumber: '',
+    ecuIdentifier: '',
+    distanceTraveled: ''
+  });
+
+  const [crashDetails, setCrashDetails] = useState({
+    date: '',
+    time: '',
     location: ''
   });
 
-  const [additionalData, setAdditionalData] = useState({
-    impactSeverity: '',
-    throttlePosition: '',
-    brakePosition: ''
-  });
+  const [uploadedMediaFile, setUploadedMediaFile] = useState(null);
+  const [uploadedDataFile, setUploadedDataFile] = useState(null);
 
-  const [uploadedFile, setUploadedFile] = useState(null);
 
-  const handleFileUpload = (event) => {
-    setUploadedFile(event.target.files[0]);
+  const handleFileUpload = (event, fileType) => {
+    const file = event.target.files[0];
+    if (file) {
+      if (fileType === 'media') {
+        setUploadedMediaFile(file);
+      } else if (fileType === 'data') {
+        setUploadedDataFile(file);
+      }
+    }
   };
 
   const handleInputChange = (event, category) => {
     const { name, value } = event.target;
-    console.log('Input change:', { category, name, value });
-    
-    // Convert the input name to match state property names
     const stateKey = name.replace(/\s+/g, '').replace(/^./, c => c.toLowerCase());
-    
+
     if (category === 'vehicle') {
-      setVehicleDetails(prev => {
-        const updated = { ...prev, [stateKey]: value };
-        console.log('Updated vehicle details:', updated);
-        return updated;
-      });
+      setVehicleDetails(prev => ({ ...prev, [stateKey]: value }));
     } else if (category === 'crash') {
-      setCrashDetails(prev => {
-        const updated = { ...prev, [stateKey]: value };
-        console.log('Updated crash details:', updated);
-        return updated;
-      });
-    } else if (category === 'additional') {
-      setAdditionalData(prev => {
-        const updated = { ...prev, [stateKey]: value };
-        console.log('Updated additional data:', updated);
-        return updated;
-      });
+      setCrashDetails(prev => ({ ...prev, [stateKey]: value }));
     }
   };
 
@@ -62,124 +55,83 @@ const HardwareSimulator = () => {
     }
 
     const formData = new FormData();
-    
-    // Append file if uploaded
-    if (uploadedFile) {
-      formData.append('file', uploadedFile);
+
+    if (uploadedMediaFile) {
+      formData.append('image', uploadedMediaFile);
     }
-    
-    // Vehicle details
-    Object.entries(vehicleDetails).forEach(([key, value]) => {
-      formData.append(key, value);
-      console.log(`Appending ${key}:`, value);
-    });
+    if (uploadedDataFile) {
+      formData.append('file', uploadedDataFile);
 
-    // Crash details
-    Object.entries(crashDetails).forEach(([key, value]) => {
-      formData.append(key, value);
-      console.log(`Appending ${key}:`, value);
-    });
+    }
 
-    // Additional data
-    Object.entries(additionalData).forEach(([key, value]) => {
-      formData.append(key, value);
-      console.log(`Appending ${key}:`, value);
-    });
+    // Append other form fields
+    Object.entries(vehicleDetails).forEach(([key, value]) => formData.append(key, value));
+    Object.entries(crashDetails).forEach(([key, value]) => formData.append(key, value));
 
 
     try {
-      console.log('Submitting form data...');
-      const response = await fetch('http://localhost:3000/api/upload-and-process', {
+      const response = await fetch('http://localhost:3000/crash-report/upload-and-analyze', {
         method: 'POST',
         body: formData,
         credentials: 'include',
-        headers: {
-          'Accept': 'application/json',
-        }
+        headers: { 'Accept': 'application/json' }
       });
-      
+
       if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(`HTTP error! status: ${response.status}, message: ${errorText}`);
+        throw new Error(`HTTP error! status: ${response.status}`);
       }
-      
+
       const result = await response.json();
-      console.log('Upload successful:', result);
-      alert('Data uploaded successfully!');
+      console.log('Upload and analysis successful:', result);
+      alert('Data uploaded and analyzed successfully!');
     } catch (error) {
       console.error('Submission error:', error);
 
-      alert(`Error uploading data: ${error.message}`);
+      alert(`Error uploading and analyzing data: ${error.message}`);
     }
   };
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center p-6 bg-gray-100">
-      <div className="w-full max-w-3xl bg-white shadow-2xl rounded-lg p-8">
-        <h2 className="text-3xl font-bold text-gray-800 mb-6 text-center">Crash Data Simulator</h2>
+    <div className="min-h-screen flex flex-col items-center justify-center p-6 bg-[#1B1F3B]">
+      <div className="w-full max-w-3xl bg-[#2C2F48] shadow-2xl rounded-lg p-8">
+        <h2 className="text-4xl font-bold text-[#6C63FF] mb-8 text-center">Hardware Data Simulator</h2>
 
-        <div className="mb-6">
-          <label className="block text-lg font-medium text-gray-700 mb-2">Upload Photo/Video (Optional)</label>
+        <h3 className="text-3xl font-semibold text-[#6C63FF] mb-6">Upload Files</h3>
+        <div className="mb-8">
+          <label className="block text-lg font-medium text-gray-300 mb-2">Upload Photo/Video</label>
+
           <input
             type="file"
             accept="image/*,video/*"
-            onChange={handleFileUpload}
-            className="block w-full text-sm text-gray-500 border border-gray-300 rounded-lg cursor-pointer bg-gray-50 shadow-sm focus:ring-indigo-500 focus:border-indigo-500"
+            onChange={(e) => handleFileUpload(e, 'media')}
+            className="block w-full text-sm text-gray-300 border border-gray-500 rounded-lg cursor-pointer bg-[#3B3F5C] shadow-sm focus:ring-2 focus:ring-[#6C63FF] focus:border-[#6C63FF] mb-4 transition duration-200 ease-in-out transform hover:scale-105"
+          />
+          <label className="block text-lg font-medium text-gray-300 mb-2">Upload CSV/Excel File</label>
+          <input
+            type="file"
+            accept=".csv, .xls, .xlsx"
+            onChange={(e) => handleFileUpload(e, 'data')}
+            className="block w-full text-sm text-gray-300 border border-gray-500 rounded-lg cursor-pointer bg-[#3B3F5C] shadow-sm focus:ring-2 focus:ring-[#6C63FF] focus:border-[#6C63FF] transition duration-200 ease-in-out transform hover:scale-105"
           />
         </div>
 
-        <h3 className="text-2xl font-semibold text-gray-700 mb-4">Vehicle Details</h3>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
+        <h3 className="text-3xl font-semibold text-[#6C63FF] mb-6">Event Details</h3>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 mb-8">
           {[
-            { label: 'VIN Number', name: 'vinNumber' },
-            { label: 'ECU Identifier', name: 'ecuIdentifier' },
-            { label: 'Distance Traveled', name: 'distanceTraveled' }
-          ].map((field, index) => (
-            <div key={index}>
-              <label className="block text-sm font-medium text-gray-700 mb-1">{field.label}</label>
+            'VIN Number',
+            'ECU Identifier',
+            'Distance Traveled',
+            'Date',
+            'Time',
+            'Location'
+          ].map((label, index) => (
+            <div key={index} className="transition duration-200 ease-in-out transform hover:scale-105">
+              <label className="block text-sm font-medium text-gray-300 mb-1">{label}</label>
               <input
                 type="text"
-                name={field.name}
-                onChange={(e) => handleInputChange(e, 'vehicle')}
-                className="block w-full border border-gray-300 rounded-lg shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm p-2"
-              />
-            </div>
-          ))}
-        </div>
-
-        <h3 className="text-2xl font-semibold text-gray-700 mb-4">Crash Event Details</h3>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
-          {[
-            { label: 'Date', name: 'date' },
-            { label: 'Time', name: 'time' },
-            { label: 'Location', name: 'location' },
-            { label: 'Impact Severity', name: 'impactSeverity' }
-          ].map((field, index) => (
-            <div key={index}>
-              <label className="block text-sm font-medium text-gray-700 mb-1">{field.label}</label>
-              <input
-                type="text"
-                name={field.name}
-                onChange={(e) => handleInputChange(e, 'crash')}
-                className="block w-full border border-gray-300 rounded-lg shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm p-2"
-              />
-            </div>
-          ))}
-        </div>
-
-        <h3 className="text-2xl font-semibold text-gray-700 mb-4">Additional Data</h3>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
-          {[
-            { label: 'Brake Position', name: 'brakePosition' },
-            { label: 'Engine RPM', name: 'engineRpm' }
-          ].map((field, index) => (
-            <div key={index}>
-              <label className="block text-sm font-medium text-gray-700 mb-1">{field.label}</label>
-              <input
-                type="text"
-                name={field.name}
-                onChange={(e) => handleInputChange(e, 'additional')}
-                className="block w-full border border-gray-300 rounded-lg shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm p-2"
+                name={label}
+                onChange={(e) => handleInputChange(e, label.includes('VIN') || label.includes('ECU') || label.includes('Distance') ? 'vehicle' : 'crash')}
+                className="block w-full border border-gray-500 rounded-lg shadow-sm focus:ring-2 focus:ring-[#6C63FF] focus:border-[#6C63FF] sm:text-sm p-3 bg-[#3B3F5C] text-gray-300"
               />
             </div>
           ))}
@@ -187,7 +139,7 @@ const HardwareSimulator = () => {
 
         <button
           onClick={handleSubmit}
-          className="w-full bg-indigo-500 text-white py-3 px-6 rounded-lg shadow-lg text-lg font-medium hover:bg-indigo-600 focus:outline-none focus:ring-4 focus:ring-indigo-300"
+          className="w-full bg-[#6C63FF] text-white py-4 px-6 rounded-lg shadow-lg text-lg font-medium hover:bg-[#FF6584] focus:outline-none focus:ring-4 focus:ring-[#6C63FF] transition duration-200 ease-in-out"
         >
           Submit Crash Data
         </button>
