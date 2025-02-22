@@ -3,20 +3,13 @@ import React, { useState } from 'react';
 const HardwareSimulator = () => {
   const [vehicleDetails, setVehicleDetails] = useState({
     vinNumber: '',
-    ecuIdentifier: '',
-    distanceTraveled: ''
-  });
-
-  const [crashDetails, setCrashDetails] = useState({
-    date: '',
-    time: '',
-    location: '',
-    impactSeverity: ''
+    location: ''
   });
 
   const [additionalData, setAdditionalData] = useState({
-    brakePosition: '',
-    engineRpm: ''
+    impactSeverity: '',
+    throttlePosition: '',
+    brakePosition: ''
   });
 
   const [uploadedFile, setUploadedFile] = useState(null);
@@ -54,7 +47,23 @@ const HardwareSimulator = () => {
   };
 
   const handleSubmit = async () => {
+    // Validate required fields
+    const requiredFields = [
+      vehicleDetails.vinNumber, 
+      vehicleDetails.location, 
+      additionalData.impactSeverity,
+      additionalData.throttlePosition,
+      additionalData.brakePosition
+    ];
+
+    if (requiredFields.some(field => !field)) {
+      alert('Please fill in all required fields');
+      return;
+    }
+
     const formData = new FormData();
+    
+    // Append file if uploaded
     if (uploadedFile) {
       formData.append('file', uploadedFile);
     }
@@ -77,6 +86,7 @@ const HardwareSimulator = () => {
       console.log(`Appending ${key}:`, value);
     });
 
+
     try {
       console.log('Submitting form data...');
       const response = await fetch('http://localhost:3000/api/upload-and-process', {
@@ -98,17 +108,18 @@ const HardwareSimulator = () => {
       alert('Data uploaded successfully!');
     } catch (error) {
       console.error('Submission error:', error);
+
       alert(`Error uploading data: ${error.message}`);
     }
   };
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center p-6">
+    <div className="min-h-screen flex flex-col items-center justify-center p-6 bg-gray-100">
       <div className="w-full max-w-3xl bg-white shadow-2xl rounded-lg p-8">
-        <h2 className="text-3xl font-bold text-gray-800 mb-6 text-center">Hardware Data Simulator</h2>
+        <h2 className="text-3xl font-bold text-gray-800 mb-6 text-center">Crash Data Simulator</h2>
 
         <div className="mb-6">
-          <label className="block text-lg font-medium text-gray-700 mb-2">Upload Photo/Video</label>
+          <label className="block text-lg font-medium text-gray-700 mb-2">Upload Photo/Video (Optional)</label>
           <input
             type="file"
             accept="image/*,video/*"
@@ -178,7 +189,7 @@ const HardwareSimulator = () => {
           onClick={handleSubmit}
           className="w-full bg-indigo-500 text-white py-3 px-6 rounded-lg shadow-lg text-lg font-medium hover:bg-indigo-600 focus:outline-none focus:ring-4 focus:ring-indigo-300"
         >
-          Submit Data
+          Submit Crash Data
         </button>
       </div>
     </div>
