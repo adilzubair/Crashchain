@@ -16,6 +16,7 @@ const HardwareSimulator = () => {
   const [uploadedMediaFile, setUploadedMediaFile] = useState(null);
   const [uploadedDataFile, setUploadedDataFile] = useState(null);
 
+
   const handleFileUpload = (event, fileType) => {
     const file = event.target.files[0];
     if (file) {
@@ -39,6 +40,20 @@ const HardwareSimulator = () => {
   };
 
   const handleSubmit = async () => {
+    // Validate required fields
+    const requiredFields = [
+      vehicleDetails.vinNumber, 
+      vehicleDetails.location, 
+      additionalData.impactSeverity,
+      additionalData.throttlePosition,
+      additionalData.brakePosition
+    ];
+
+    if (requiredFields.some(field => !field)) {
+      alert('Please fill in all required fields');
+      return;
+    }
+
     const formData = new FormData();
 
     if (uploadedMediaFile) {
@@ -46,11 +61,13 @@ const HardwareSimulator = () => {
     }
     if (uploadedDataFile) {
       formData.append('file', uploadedDataFile);
+
     }
 
     // Append other form fields
     Object.entries(vehicleDetails).forEach(([key, value]) => formData.append(key, value));
     Object.entries(crashDetails).forEach(([key, value]) => formData.append(key, value));
+
 
     try {
       const response = await fetch('http://localhost:3000/crash-report/upload-and-analyze', {
@@ -69,6 +86,7 @@ const HardwareSimulator = () => {
       alert('Data uploaded and analyzed successfully!');
     } catch (error) {
       console.error('Submission error:', error);
+
       alert(`Error uploading and analyzing data: ${error.message}`);
     }
   };
@@ -81,6 +99,7 @@ const HardwareSimulator = () => {
         <h3 className="text-3xl font-semibold text-[#6C63FF] mb-6">Upload Files</h3>
         <div className="mb-8">
           <label className="block text-lg font-medium text-gray-300 mb-2">Upload Photo/Video</label>
+
           <input
             type="file"
             accept="image/*,video/*"
@@ -122,7 +141,7 @@ const HardwareSimulator = () => {
           onClick={handleSubmit}
           className="w-full bg-[#6C63FF] text-white py-4 px-6 rounded-lg shadow-lg text-lg font-medium hover:bg-[#FF6584] focus:outline-none focus:ring-4 focus:ring-[#6C63FF] transition duration-200 ease-in-out"
         >
-          Submit Data
+          Submit Crash Data
         </button>
       </div>
     </div>
